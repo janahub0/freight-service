@@ -33,3 +33,12 @@ def test_ask_uses_the_agent(monkeypatch):
 def test_ask_rejects_empty_question():
     r = client.post("/ask", json={"question": "   "})
     assert r.status_code == 400
+
+
+def test_drift_alert_logs_warning(monkeypatch, caplog):
+    import rag_pipeline
+    monkeypatch.setattr(agent, "get_index", lambda: None)
+    monkeypatch.setattr(rag_pipeline, "retrieve", lambda idx, q, k: [{"score": 0.2, "section": "x", "text": "y"}])
+    with caplog.at_level("WARNING", logger="service"):
+        agent.search("something unrelated")
+    assert "RETRIEVAL ALERT" in caplog.text

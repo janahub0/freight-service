@@ -1,7 +1,7 @@
 # the agent from block 9, now as a module so the API, the tests and the MCP server can all import it.
 # nothing here calls the internet when it is imported, the index and the model are made on first use.
 
-import os, time, ast, operator, sqlite3
+import os, time, ast, operator, sqlite3, logging
 from dotenv import load_dotenv
 from langgraph.graph import StateGraph, START, END, MessagesState
 from langgraph.checkpoint.sqlite import SqliteSaver
@@ -11,6 +11,7 @@ from langchain_core.tools import tool
 import rag_core
 
 load_dotenv()
+log = logging.getLogger("service")
 
 # settings come from environment variables, nothing secret is in the code
 DATA_DIR = os.getenv("DATA_DIR", ".")
@@ -55,9 +56,19 @@ def get_index():
     return _index
 
 
+# drift alert: if the best passage is not similar enough to the question, the notes may not cover it
+# (or the embeddings changed). the threshold is a starting guess, tune it from the logs.
+DRIFT_MIN_SCORE = float(os.getenv("DRIFT_MIN_SCORE", "0.55"))
+
+
 def search(query, k=3):
     from rag_pipeline import retrieve
-    return retrieve(get_index(), query, k)
+    passages = retrieve(get_index(), query, k)
+    top = passages[0]["score"] if passages else 0.0
+    log.info("retrieval top_score=%.3f query=%s", top, query[:80])
+    if top < DRIFT_MIN_SCORE:
+        log.warning("RETRIEVAL ALERT: top score %.3f is below %.2f for query: %s", top, DRIFT_MIN_SCORE, query[:80])
+    return passages
 
 
 @tool
