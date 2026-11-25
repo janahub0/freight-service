@@ -1,0 +1,7 @@
+.env
+.ipynb_checkpoints
+__pycache__
+*.sqlite
+embedding_cache.json
+tests
+.pytest_cache

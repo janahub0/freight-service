@@ -1,0 +1,38 @@
+name: block 11 service
+
+on:
+  push:
+    paths:
+      - "block-11-freight-service/**"
+      - ".github/workflows/block11.yml"
+
+jobs:
+  test-build-deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: block-11-freight-service
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: install packages
+        run: pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: run tests
+        run: python -m pytest -q tests
+
+      - name: build the docker image
+        run: docker build -t freight-service .
+
+      # only runs on main, and only when the tests and the build passed
+      - name: redeploy
+        if: github.ref == 'refs/heads/main'
+        env:
+          DEPLOY_HOOK: ${{ secrets.DEPLOY_HOOK_URL }}
+        run: |
+          if [ -n "$DEPLOY_HOOK" ]; then curl -fsS -X POST "$DEPLOY_HOOK"; else echo "no deploy hook set, skipping"; fi

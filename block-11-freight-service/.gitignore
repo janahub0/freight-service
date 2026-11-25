@@ -1,0 +1,5 @@
+.env
+__pycache__
+*.sqlite
+embedding_cache.json
+.pytest_cache

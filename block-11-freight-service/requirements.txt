@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+langgraph
+langgraph-checkpoint-sqlite
+langchain-google-genai
+google-genai
+python-dotenv
+pydantic
+numpy
+httpx
+qdrant-client
+langfuse
+mcp<2
